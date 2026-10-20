@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cipher Surgeon — JWT decoder, verifier and encryption toolkit</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Decode, audit, verify and sign JSON Web Tokens with every claim and risk explained. Encrypt and decrypt text with AES-256-GCM, hash and HMAC, and peel nested base64/hex/URL encodings. 100% client-side."
+    />
+    <meta property="og:title" content="Cipher Surgeon" />
+    <meta property="og:description" content="JWT decoder that explains every claim and flags security problems, plus AES-256-GCM encryption, hashes and a layer-by-layer decoder. Runs in your browser." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://uvilleramente.github.io/cipher-surgeon/" />
+    <meta name="theme-color" content="#0b7f63" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <script>
+      // Apply a saved theme before first paint to avoid a flash.
+      try {
+        var t = localStorage.getItem('cipher-surgeon:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <app-root></app-root>
+    <noscript>Cipher Surgeon needs JavaScript: everything runs locally in your browser.</noscript>
+  </body>
+</html>

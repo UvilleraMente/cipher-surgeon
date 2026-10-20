@@ -1,0 +1,71 @@
+<div class="tool">
+  <section class="panel" aria-label="Input">
+    <header class="panel-header">
+      <h2 class="panel-title"><app-icon name="hash" /> Input</h2>
+      <div class="panel-actions">
+        <label class="btn btn-ghost file-btn">
+          <app-icon name="file" /> Hash a file
+          <input type="file" class="sr-only" (change)="onFile($event)" />
+        </label>
+      </div>
+    </header>
+    <div class="panel-body">
+      @if (file(); as f) {
+        <div class="callout tone-info">
+          <app-icon name="file" />
+          <span><strong>{{ f.name }}</strong>{{ formatBytes(f.size) }} · read locally, never uploaded</span>
+          <button type="button" class="btn-icon-sm" (click)="file.set(null)" aria-label="Remove file"><app-icon name="x" /></button>
+        </div>
+      } @else {
+        <textarea
+          class="editor tall"
+          spellcheck="false"
+          aria-label="Text to hash"
+          placeholder="Text to hash (UTF-8)"
+          [value]="input()"
+          (input)="input.set(value($event))"
+        ></textarea>
+      }
+      <label class="field">
+        <span>HMAC key <span class="muted">(optional: computes HMAC-SHA instead of a plain hash)</span></span>
+        <input class="input mono" type="text" spellcheck="false" autocomplete="off" [value]="hmacKey()" (input)="hmacKey.set(value($event))" />
+      </label>
+      <label class="field">
+        <span>Compare with an expected digest</span>
+        <input class="input mono" type="text" spellcheck="false" autocomplete="off" placeholder="Paste a checksum to check it" [value]="compare()" (input)="compare.set(value($event))" />
+      </label>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Digests">
+    <header class="panel-header">
+      <h2 class="panel-title">{{ hmacKey() ? 'HMAC' : 'Digests' }}</h2>
+      <div class="segmented" role="group" aria-label="Output encoding">
+        <button type="button" [attr.aria-pressed]="encoding() === 'hex'" (click)="encoding.set('hex')">hex</button>
+        <button type="button" [attr.aria-pressed]="encoding() === 'base64'" (click)="encoding.set('base64')">base64</button>
+        <button type="button" [attr.aria-pressed]="encoding() === 'base64url'" (click)="encoding.set('base64url')">base64url</button>
+      </div>
+    </header>
+    <ul class="digests">
+      @for (r of results(); track r.algorithm) {
+        <li [class.match]="matches(r.digest)">
+          <div class="digest-head">
+            <strong>{{ r.hmac ? 'HMAC-' : '' }}{{ r.algorithm }}</strong>
+            <span class="small muted">{{ r.bytes * 8 }} bits</span>
+            @if (r.algorithm === 'SHA-1' && !r.hmac) {
+              <span class="badge tone-warning" title="Collisions are practical since 2017 (SHAttered)">broken for signatures</span>
+            }
+            @if (matches(r.digest)) {
+              <span class="badge tone-ok"><app-icon name="check" /> matches</span>
+            }
+            <button type="button" class="btn-icon-sm" (click)="copy(r.digest)" [attr.aria-label]="'Copy ' + r.algorithm"><app-icon name="copy" /></button>
+          </div>
+          <code class="digest">{{ r.digest }}</code>
+        </li>
+      }
+    </ul>
+    <p class="small muted foot">
+      Hashes are one-way: there is no “decrypt”. MD5 is not offered because Web Crypto deliberately leaves it out.
+    </p>
+  </section>
+</div>

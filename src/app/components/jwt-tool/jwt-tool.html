@@ -1,0 +1,286 @@
+<div class="toolbar">
+  <div class="segmented" role="group" aria-label="Mode">
+    <button type="button" [attr.aria-pressed]="mode() === 'decode'" (click)="mode.set('decode')">Decode &amp; audit</button>
+    <button type="button" [attr.aria-pressed]="mode() === 'encode'" (click)="mode.set('encode')">Encode &amp; sign</button>
+  </div>
+  <label>
+    <span class="sr-only">Load an example token</span>
+    <select class="btn" (change)="loadExample($event)" aria-label="Load an example token">
+      <option value="" selected>Load example…</option>
+      @for (ex of examples; track ex.id) {
+        <option [value]="ex.id">{{ ex.label }}</option>
+      }
+    </select>
+  </label>
+</div>
+
+@if (mode() === 'decode') {
+  <div class="tool">
+    <div class="stack">
+      <section class="panel" aria-label="Encoded token">
+        <header class="panel-header">
+          <h2 class="panel-title"><app-icon name="token" /> Encoded token</h2>
+          <div class="panel-actions">
+            <button type="button" class="btn btn-ghost" (click)="copy(decoded().token, 'Token')" [disabled]="!token()"><app-icon name="copy" /> Copy</button>
+            <button type="button" class="btn btn-ghost" (click)="editToken()" [disabled]="!decoded().header"><app-icon name="pen" /> Edit &amp; re-sign</button>
+            <button type="button" class="btn btn-ghost" (click)="token.set('')" [disabled]="!token()"><app-icon name="x" /> Clear</button>
+          </div>
+        </header>
+        <div class="panel-body">
+          <label class="sr-only" for="jwt-input">JWT</label>
+          <textarea
+            id="jwt-input"
+            class="editor tall"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="Paste a JWT, or a whole “Authorization: Bearer …” header"
+            [value]="token()"
+            (input)="token.set(value($event))"
+          ></textarea>
+          @if (decoded().segments.length) {
+            <p class="colored mono" aria-label="Token split into its three parts">
+              @for (seg of decoded().segments; track seg.name; let last = $last) {
+                <span class="seg-{{ seg.name }}" [title]="seg.name">{{ seg.text }}</span>@if (!last) {<span class="dot">.</span>}
+              }
+            </p>
+            <div class="legend small">
+              <span class="seg-header">■ header</span>
+              <span class="seg-payload">■ payload</span>
+              <span class="seg-signature">■ signature</span>
+            </div>
+          }
+          @for (note of decoded().notes; track note) {
+            <p class="small muted note"><app-icon name="info" /> {{ note }}</p>
+          }
+          @for (p of decoded().problems; track $index) {
+            <div class="callout tone-error" role="alert">
+              <app-icon name="alert" />
+              <span><strong>{{ p.segment === 'token' ? 'Token' : p.segment }}</strong>{{ p.message }}</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Verify signature">
+        <header class="panel-header">
+          <h2 class="panel-title"><app-icon name="key" /> Verify signature</h2>
+          @if (verification(); as v) {
+            <span class="badge tone-{{ v.status }}" role="status">
+              <app-icon [name]="v.status === 'valid' ? 'check' : v.status === 'invalid' ? 'x' : 'alert'" />
+              {{ v.status === 'valid' ? 'Signature verified' : v.status === 'invalid' ? 'Invalid signature' : 'Cannot verify' }}
+            </span>
+          } @else if (verifying()) {
+            <span class="spinner" aria-label="Verifying"></span>
+          }
+        </header>
+        <div class="panel-body">
+          @if (!decoded().header) {
+            <p class="small muted">Paste a token to verify it.</p>
+          } @else if (alg() === 'none') {
+            <div class="callout tone-critical"><app-icon name="alert" /><span><strong>Nothing to verify</strong>An unsigned token proves nothing about who made it.</span></div>
+          } @else if (needsKey()) {
+            <label class="field">
+              <span>
+                {{ isHmac() ? 'Shared secret for ' + alg() : 'Public key for ' + alg() + ' (PEM, certificate, JWK or JWKS)' }}
+              </span>
+              @if (isHmac()) {
+                <div class="secret-row">
+                  <input
+                    class="input mono"
+                    [type]="showKey() ? 'text' : 'password'"
+                    spellcheck="false"
+                    autocomplete="off"
+                    placeholder="your-256-bit-secret"
+                    [value]="verifyKey()"
+                    (input)="verifyKey.set(value($event))"
+                  />
+                  <button type="button" class="btn btn-icon" (click)="showKey.set(!showKey())" [attr.aria-label]="showKey() ? 'Hide secret' : 'Show secret'">
+                    <app-icon [name]="showKey() ? 'eye-off' : 'eye'" />
+                  </button>
+                  <select class="input enc" [value]="secretEncoding()" (change)="secretEncoding.set($any(value($event)))" aria-label="Secret encoding">
+                    <option value="utf8">UTF-8</option>
+                    <option value="base64">base64</option>
+                    <option value="hex">hex</option>
+                  </select>
+                </div>
+              } @else {
+                <textarea
+                  class="editor"
+                  spellcheck="false"
+                  placeholder="-----BEGIN PUBLIC KEY-----&#10;…&#10;-----END PUBLIC KEY-----"
+                  [value]="verifyKey()"
+                  (input)="verifyKey.set(value($event))"
+                ></textarea>
+              }
+            </label>
+            @if (verification(); as v) {
+              <p class="small verify-msg tone-{{ v.status }}">{{ v.message }}</p>
+            }
+            <p class="small muted">The key never leaves this tab. Verification uses the browser’s Web Crypto API.</p>
+          } @else {
+            <p class="small muted">Algorithm {{ alg() }} is not supported for verification.</p>
+          }
+        </div>
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="panel" aria-label="Security audit">
+        <header class="panel-header">
+          <h2 class="panel-title"><app-icon name="shield" /> Audit</h2>
+          <div class="panel-actions">
+            @if (counts().critical) { <span class="badge tone-critical">{{ counts().critical }} critical</span> }
+            @if (counts().warning) { <span class="badge tone-warning">{{ counts().warning }} warning{{ counts().warning === 1 ? '' : 's' }}</span> }
+            @if (counts().info) { <span class="badge tone-info">{{ counts().info }} note{{ counts().info === 1 ? '' : 's' }}</span> }
+            <label class="field inline small" title="Seconds of clock difference tolerated for exp and nbf">
+              skew
+              <input class="input skew" type="number" min="0" step="30" [value]="skew()" (input)="skew.set(+value($event) || 0)" />
+            </label>
+          </div>
+        </header>
+        @if (!decoded().header) {
+          <p class="empty">Findings about the algorithm, expiry, header injection and leaked secrets appear here.</p>
+        } @else {
+          <ul class="findings">
+            @for (f of findings(); track f.kind + f.title) {
+              <li class="finding tone-{{ f.severity }}">
+                <app-icon [name]="severityIcons[f.severity]" />
+                <div>
+                  <strong>{{ f.title }}</strong>
+                  <p>{{ f.detail }}</p>
+                </div>
+              </li>
+            } @empty {
+              <li class="empty">No findings.</li>
+            }
+          </ul>
+        }
+      </section>
+
+      @if (decoded().header) {
+        <section class="panel" aria-label="Header">
+          <header class="panel-header">
+            <h2 class="panel-title seg-header">Header</h2>
+            <button type="button" class="btn btn-ghost" (click)="copy(headerJson(), 'Header')"><app-icon name="copy" /> JSON</button>
+          </header>
+          <dl class="claims">
+            @for (c of headerClaims(); track c.key) {
+              <div class="claim tone-{{ c.status }}">
+                <dt><code>{{ c.key }}</code></dt>
+                <dd>
+                  <code class="val">{{ c.value }}</code>
+                  <span class="desc">@if (c.label) {<b>{{ c.label }}. </b>}{{ c.description }}</span>
+                </dd>
+              </div>
+            }
+          </dl>
+        </section>
+      }
+
+      @if (decoded().payload || decoded().payloadText !== null) {
+        <section class="panel" aria-label="Payload">
+          <header class="panel-header">
+            <h2 class="panel-title seg-payload">Payload</h2>
+            <button type="button" class="btn btn-ghost" (click)="copy(payloadJson(), 'Payload')"><app-icon name="copy" /> JSON</button>
+          </header>
+          @if (decoded().payload) {
+            <dl class="claims">
+              @for (c of payloadClaims(); track c.key) {
+                <div class="claim tone-{{ c.status }}">
+                  <dt><code>{{ c.key }}</code></dt>
+                  <dd>
+                    <code class="val">{{ c.value }}</code>
+                    @if (c.time) { <span class="time">{{ c.time }}</span> }
+                    <span class="desc">@if (c.label) {<b>{{ c.label }}. </b>}{{ c.description }}@if (c.source) { <i>{{ c.source }}</i>}</span>
+                  </dd>
+                </div>
+              } @empty {
+                <p class="empty">The payload is an empty object.</p>
+              }
+            </dl>
+          } @else {
+            <div class="panel-body"><pre class="output">{{ decoded().payloadText }}</pre></div>
+          }
+        </section>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="tool">
+    <div class="stack">
+      <section class="panel" aria-label="Header to sign">
+        <header class="panel-header">
+          <h2 class="panel-title seg-header">Header</h2>
+          <label class="field inline small">
+            alg
+            <select class="input" [value]="encAlg()" (change)="setAlg(value($event))">
+              @for (a of algorithms; track a) {
+                <option [value]="a">{{ a }}</option>
+              }
+            </select>
+          </label>
+        </header>
+        <div class="panel-body">
+          <textarea class="editor" spellcheck="false" aria-label="Header JSON" [value]="encHeader()" (input)="encHeader.set(value($event))"></textarea>
+        </div>
+      </section>
+      <section class="panel" aria-label="Payload to sign">
+        <header class="panel-header">
+          <h2 class="panel-title seg-payload">Payload</h2>
+          <div class="panel-actions">
+            <button type="button" class="btn btn-ghost" (click)="patchPayload('iat')">iat = now</button>
+            <button type="button" class="btn btn-ghost" (click)="patchPayload('exp15m')">exp +15 min</button>
+            <button type="button" class="btn btn-ghost" (click)="patchPayload('exp1d')">exp +1 day</button>
+            <button type="button" class="btn btn-ghost" (click)="patchPayload('jti')">new jti</button>
+          </div>
+        </header>
+        <div class="panel-body">
+          <textarea class="editor tall" spellcheck="false" aria-label="Payload JSON" [value]="encPayload()" (input)="encPayload.set(value($event))"></textarea>
+        </div>
+      </section>
+    </div>
+    <div class="stack">
+      <section class="panel" aria-label="Signing key">
+        <header class="panel-header">
+          <h2 class="panel-title"><app-icon name="key" /> Signing key</h2>
+          @if (encIsHmac()) {
+            <button type="button" class="btn btn-ghost" (click)="generateSecret()"><app-icon name="key" /> Random secret</button>
+          }
+        </header>
+        <div class="panel-body">
+          @if (encAlg() === 'none') {
+            <div class="callout tone-critical"><app-icon name="alert" /><span><strong>Unsigned token</strong>Useful to test that your server rejects alg “none”. Never accept these.</span></div>
+          } @else if (encIsHmac()) {
+            <div class="secret-row">
+              <input class="input mono" type="text" spellcheck="false" autocomplete="off" placeholder="At least 32 random bytes" [value]="encKey()" (input)="encKey.set(value($event))" aria-label="Shared secret" />
+              <select class="input enc" [value]="secretEncoding()" (change)="secretEncoding.set($any(value($event)))" aria-label="Secret encoding">
+                <option value="utf8">UTF-8</option>
+                <option value="base64">base64</option>
+                <option value="hex">hex</option>
+              </select>
+            </div>
+          } @else {
+            <textarea class="editor" spellcheck="false" aria-label="Private key" placeholder="-----BEGIN PRIVATE KEY-----&#10;…&#10;-----END PRIVATE KEY----- (PKCS#8) or a private JWK" [value]="encKey()" (input)="encKey.set(value($event))"></textarea>
+          }
+        </div>
+      </section>
+      <section class="panel" aria-label="Signed token">
+        <header class="panel-header">
+          <h2 class="panel-title"><app-icon name="token" /> Signed token</h2>
+          <div class="panel-actions">
+            <button type="button" class="btn btn-ghost" (click)="copy(encOutput(), 'Token')" [disabled]="!encOutput()"><app-icon name="copy" /> Copy</button>
+            <button type="button" class="btn btn-primary" (click)="decodeSigned()" [disabled]="!encOutput()">Decode &amp; audit <app-icon name="arrow" /></button>
+          </div>
+        </header>
+        <div class="panel-body">
+          @if (encError(); as e) {
+            <div class="callout tone-error" role="alert"><app-icon name="alert" /><span>{{ e }}</span></div>
+          }
+          @if (encOutput()) {
+            <p class="colored mono">{{ encOutput() }}</p>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+}

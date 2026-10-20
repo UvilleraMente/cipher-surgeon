@@ -1,0 +1,47 @@
+.file-btn {
+  cursor: pointer;
+}
+
+.callout span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.digests {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+
+    &.match {
+      background: var(--ok-soft);
+    }
+  }
+}
+
+.digest-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+
+  .btn-icon-sm {
+    margin-left: auto;
+  }
+}
+
+.digest {
+  display: block;
+  word-break: break-all;
+  font-size: var(--mono-size);
+  line-height: var(--mono-line);
+}
+
+.foot {
+  margin: 0;
+  padding: 10px 16px 14px;
+}

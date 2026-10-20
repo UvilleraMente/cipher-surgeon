@@ -1,0 +1,104 @@
+{
+  "name": "cipher-surgeon",
+  "version": "1.0.0",
+  "description": "Decode, audit, verify and sign JSON Web Tokens, encrypt and decrypt text with AES-256-GCM, hash and HMAC, and peel nested encodings (base64, hex, URL, JWT) layer by layer, with an explanation for every step. Zero dependencies, Web Crypto only.",
+  "keywords": [
+    "jwt",
+    "jwt-decode",
+    "jwt-verify",
+    "jws",
+    "json-web-token",
+    "encrypt",
+    "decrypt",
+    "aes",
+    "aes-gcm",
+    "pbkdf2",
+    "hmac",
+    "sha256",
+    "hash",
+    "base64",
+    "base64url",
+    "hex",
+    "decode",
+    "webcrypto",
+    "security",
+    "cli"
+  ],
+  "author": "Andrésnael Acevedo De La Cruz",
+  "license": "MIT",
+  "homepage": "https://uvilleramente.github.io/cipher-surgeon/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UvilleraMente/cipher-surgeon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/UvilleraMente/cipher-surgeon/issues"
+  },
+  "main": "./lib/dist/index.cjs",
+  "module": "./lib/dist/index.mjs",
+  "types": "./lib/dist/types/lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/dist/types/lib/index.d.ts",
+      "import": "./lib/dist/index.mjs",
+      "require": "./lib/dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "cipher-surgeon": "cli/dist/cipher-surgeon.mjs"
+  },
+  "files": [
+    "lib/dist",
+    "cli/dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "build:pages": "ng build --base-href /cipher-surgeon/",
+    "watch": "ng build --watch --configuration development",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc -p tsconfig.core.json --noEmit && tsc -p tsconfig.app.json --noEmit",
+    "build:lib": "node lib/build.mjs && tsc -p tsconfig.lib.json",
+    "build:cli": "node cli/build.mjs",
+    "cli": "node cli/dist/cipher-surgeon.mjs",
+    "prepublishOnly": "npm test && npm run typecheck && npm run build:lib && npm run build:cli"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "devDependencies": {
+    "@angular/build": "^20.3.37",
+    "@angular/cli": "^20.3.37",
+    "@angular/common": "^20.3.0",
+    "@angular/compiler": "^20.3.0",
+    "@angular/compiler-cli": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "@angular/forms": "^20.3.0",
+    "@angular/platform-browser": "^20.3.0",
+    "@angular/router": "^20.3.0",
+    "@types/node": "^22.20.5",
+    "@vitest/coverage-v8": "^3.2.7",
+    "esbuild": "^0.28.2",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "typescript": "~5.9.2",
+    "vitest": "^3.2.7"
+  }
+}

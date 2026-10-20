@@ -1,0 +1,77 @@
+<header class="app-header">
+  <div class="brand">
+    <span class="logo"><app-icon name="logo" /></span>
+    <div class="brand-text">
+      <h1>Cipher Surgeon</h1>
+      <p class="tagline">Decode, audit and sign JWTs. Encrypt, hash and peel encodings. Every step explained.</p>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <span class="privacy" title="Everything runs locally with the Web Crypto API. Nothing is uploaded, and tokens, keys and passwords are never saved.">
+      <app-icon name="shield" /> <span>100% in your browser · nothing stored</span>
+    </span>
+    <a class="btn btn-ghost hide-sm" href="https://github.com/UvilleraMente/cipher-surgeon" target="_blank" rel="noopener">GitHub</a>
+    <button
+      type="button"
+      class="btn btn-icon"
+      (click)="theme.toggle()"
+      [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+      [title]="theme.theme() === 'dark' ? 'Light theme' : 'Dark theme'"
+    >
+      <app-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" />
+    </button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Tools">
+  @for (t of tabs; track t.id; let i = $index) {
+    <button
+      type="button"
+      role="tab"
+      [id]="'tab-' + t.id"
+      [attr.aria-selected]="tab() === t.id"
+      [attr.aria-controls]="'panel-' + t.id"
+      [tabIndex]="tab() === t.id ? 0 : -1"
+      (click)="select(t.id)"
+      (keydown)="onTabKey($event, i)"
+    >
+      <app-icon [name]="t.icon" /> {{ t.label }}
+    </button>
+  }
+</nav>
+
+<main class="workspace">
+  <!-- Tools stay mounted while hidden so switching tabs keeps their state. -->
+  <div role="tabpanel" id="panel-jwt" aria-labelledby="tab-jwt" [hidden]="tab() !== 'jwt'">
+    <app-jwt-tool [(token)]="jwtToken" [(verifyKey)]="jwtKey" [(secretEncoding)]="secretEncoding" />
+  </div>
+  <div role="tabpanel" id="panel-peel" aria-labelledby="tab-peel" [hidden]="tab() !== 'peel'">
+    <app-peel-tool [(input)]="peelInput" (openJwt)="openJwt($event)" (openDecrypt)="openDecrypt($event)" />
+  </div>
+  <div role="tabpanel" id="panel-encrypt" aria-labelledby="tab-encrypt" [hidden]="tab() !== 'encrypt'">
+    <app-cipher-tool [(input)]="cipherInput" [(mode)]="cipherMode" />
+  </div>
+  <div role="tabpanel" id="panel-hash" aria-labelledby="tab-hash" [hidden]="tab() !== 'hash'">
+    <app-hash-tool [(encoding)]="hashEncoding" />
+  </div>
+</main>
+
+<footer class="app-footer">
+  <span>Web Crypto only · zero dependencies · also on npm and as a CLI: <code>npx cipher-surgeon jwt &lt;token&gt;</code></span>
+  <span>
+    Open source (MIT) · built by
+    <a href="https://uvilleramente.github.io/" target="_blank" rel="noopener">Andrésnael Acevedo De La Cruz</a> · sibling of
+    <a href="https://uvilleramente.github.io/json-surgeon/" target="_blank" rel="noopener">JSON Surgeon</a>
+  </span>
+</footer>
+
+<div class="toasts" aria-live="polite">
+  @for (t of toasts.toasts(); track t.id) {
+    <div class="toast {{ t.tone }}" role="status">
+      <app-icon [name]="t.tone === 'error' ? 'alert' : 'check'" />
+      <span>{{ t.message }}</span>
+      <button type="button" class="btn-icon-sm" (click)="toasts.dismiss(t.id)" aria-label="Dismiss"><app-icon name="x" /></button>
+    </div>
+  }
+</div>

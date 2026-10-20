@@ -1,0 +1,111 @@
+<div class="tool">
+  <section class="panel" aria-label="Input">
+    <header class="panel-header">
+      <div class="segmented" role="group" aria-label="Mode">
+        <button type="button" [attr.aria-pressed]="mode() === 'encrypt'" (click)="setMode('encrypt')"><app-icon name="lock" /> Encrypt</button>
+        <button type="button" [attr.aria-pressed]="mode() === 'decrypt'" (click)="setMode('decrypt')"><app-icon name="unlock" /> Decrypt</button>
+      </div>
+      <button type="button" class="btn btn-ghost" (click)="input.set('')" [disabled]="!input()"><app-icon name="x" /> Clear</button>
+    </header>
+    <div class="panel-body">
+      <textarea
+        class="editor tall"
+        spellcheck="false"
+        [attr.aria-label]="mode() === 'encrypt' ? 'Text to encrypt' : 'Envelope to decrypt'"
+        [placeholder]="mode() === 'encrypt' ? 'Type or paste the text to protect' : 'Paste a cs1.… envelope'"
+        [value]="input()"
+        (input)="input.set(value($event))"
+      ></textarea>
+      @if (looksEncrypted()) {
+        <div class="callout tone-info">
+          <app-icon name="info" />
+          <span>This already looks like an envelope. <button type="button" class="link" (click)="setMode('decrypt')">Switch to decrypt?</button></span>
+        </div>
+      }
+      @if (envelopeInfo(); as info) {
+        <p class="small muted">
+          Envelope {{ info.version }} · PBKDF2 {{ info.iterations.toLocaleString() }} iterations · {{ info.saltBytes }}-byte salt ·
+          {{ info.ivBytes }}-byte IV · {{ info.ciphertextBytes }} bytes of ciphertext
+        </p>
+      }
+
+      <label class="field">
+        <span>Password</span>
+        <div class="pw-row">
+          <input
+            class="input"
+            [type]="showPassword() ? 'text' : 'password'"
+            autocomplete="new-password"
+            spellcheck="false"
+            [value]="password()"
+            (input)="password.set(value($event))"
+            (keydown.enter)="run()"
+          />
+          <button type="button" class="btn btn-icon" (click)="showPassword.set(!showPassword())" [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+            <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
+          </button>
+          @if (mode() === 'encrypt') {
+            <button type="button" class="btn" (click)="generatePassword()" title="128 random bits from the Web Crypto RNG">Generate</button>
+          }
+        </div>
+      </label>
+      @if (mode() === 'encrypt' && strength(); as s) {
+        <div class="meter tone-{{ s.tone }}" role="status">
+          <span class="bar"><span [style.width.%]="s.bits > 100 ? 100 : s.bits"></span></span>
+          <span class="small">{{ s.label }} · ~{{ s.bits }} bits</span>
+        </div>
+      }
+
+      @if (mode() === 'encrypt') {
+        <details class="advanced">
+          <summary class="small">Advanced</summary>
+          <label class="field inline small">
+            PBKDF2 iterations
+            <input class="input iter" type="number" min="1000" step="100000" [value]="iterations()" (input)="iterations.set(+value($event) || defaultIterations)" />
+          </label>
+          <p class="small muted">Default {{ defaultIterations.toLocaleString() }} (OWASP 2023). More is slower for you and for attackers.</p>
+        </details>
+      }
+
+      <button type="button" class="btn btn-primary go" (click)="run()" [disabled]="busy() || !input()">
+        @if (busy()) {
+          <span class="spinner"></span> Deriving key…
+        } @else {
+          <app-icon [name]="mode() === 'encrypt' ? 'lock' : 'unlock'" /> {{ mode() === 'encrypt' ? 'Encrypt' : 'Decrypt' }}
+        }
+      </button>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Result">
+    <header class="panel-header">
+      <h2 class="panel-title">{{ mode() === 'encrypt' ? 'Envelope' : 'Plaintext' }}</h2>
+      <div class="panel-actions">
+        <button type="button" class="btn btn-ghost" (click)="copy()" [disabled]="!output()"><app-icon name="copy" /> Copy</button>
+        <button type="button" class="btn btn-ghost" (click)="download()" [disabled]="!output()"><app-icon name="file" /> Save</button>
+        <button type="button" class="btn btn-ghost" (click)="swap()" [disabled]="!output()">{{ mode() === 'encrypt' ? 'Try decrypting' : 'Re-encrypt' }} <app-icon name="arrow" /></button>
+      </div>
+    </header>
+    <div class="panel-body">
+      @if (error(); as e) {
+        <div class="callout tone-error" role="alert"><app-icon name="alert" /><span><strong>Could not decrypt</strong>{{ e.message }}</span></div>
+      }
+      @if (output()) {
+        <pre class="output">{{ output() }}</pre>
+        @if (elapsed() !== null) {
+          <p class="small muted">Done in {{ elapsed() }} ms. Most of it is key derivation, which is what makes guessing passwords slow.</p>
+        }
+      } @else if (!error()) {
+        <div class="how small">
+          <p><strong>How it works</strong></p>
+          <ol>
+            <li>A random 16-byte salt and your password go through <b>PBKDF2-SHA-256</b> to derive a 256-bit key.</li>
+            <li>The text is encrypted with <b>AES-256-GCM</b> and a random 12-byte IV, which also adds a tamper-proof tag.</li>
+            <li>The result is one string: <code>cs1.iterations.salt.iv.ciphertext</code>. The header is authenticated too.</li>
+          </ol>
+          <p class="muted">Anyone with the password can decrypt it with this page, the CLI or the npm package. Without it, nobody can, including me.</p>
+        </div>
+      }
+    </div>
+  </section>
+</div>

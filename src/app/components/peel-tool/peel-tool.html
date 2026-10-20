@@ -1,0 +1,79 @@
+<div class="tool">
+  <section class="panel" aria-label="Input">
+    <header class="panel-header">
+      <h2 class="panel-title"><app-icon name="layers" /> Anything encoded</h2>
+      <div class="panel-actions">
+        <label>
+          <span class="sr-only">Load an example</span>
+          <select class="btn" (change)="loadExample($event)" aria-label="Load an example">
+            <option value="" selected>Load example…</option>
+            @for (ex of examples; track ex.id) {
+              <option [value]="ex.id">{{ ex.label }}</option>
+            }
+          </select>
+        </label>
+        <button type="button" class="btn btn-ghost" (click)="input.set('')" [disabled]="!input()"><app-icon name="x" /> Clear</button>
+      </div>
+    </header>
+    <div class="panel-body">
+      <textarea
+        class="editor tall"
+        spellcheck="false"
+        autocomplete="off"
+        aria-label="Encoded text"
+        placeholder="Paste a cookie, a query string, a base64 blob, hex bytes, a hash, a token… Cipher Surgeon peels it layer by layer."
+        [value]="input()"
+        (input)="input.set(value($event))"
+      ></textarea>
+      <p class="small muted">
+        Detects URL encoding, base64, base64url, hex, gzip and zlib, HTML entities, escape sequences, quoted JSON strings, JWTs,
+        PEM blocks, password hashes, digests, UUIDs and timestamps.
+      </p>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Layers">
+    <header class="panel-header">
+      <h2 class="panel-title">Layers</h2>
+      @if (outcome(); as o) {
+        <span class="badge tone-info">{{ o.layers.length }} layer{{ o.layers.length === 1 ? '' : 's' }} removed</span>
+      }
+    </header>
+    <div class="panel-body">
+      @if (outcome(); as o) {
+        @if (o.result.kind === 'empty') {
+          <p class="empty">Paste something on the left, or load an example.</p>
+        } @else {
+          <ol class="steps">
+            @for (layer of o.layers; track $index) {
+              <li class="step">
+                <span class="num">{{ $index + 1 }}</span>
+                <div>
+                  <strong>{{ layer.label }}</strong>
+                  <p>{{ layer.explanation }}</p>
+                </div>
+              </li>
+            }
+            <li class="step final">
+              <span class="num"><app-icon name="check" /></span>
+              <div>
+                <strong>{{ o.result.label }}</strong>
+                <p>{{ o.result.explanation }}</p>
+              </div>
+            </li>
+          </ol>
+          <div class="result-actions">
+            <button type="button" class="btn" (click)="copy(o.result.output)"><app-icon name="copy" /> Copy result</button>
+            @if (o.result.kind === 'jwt' || o.result.kind === 'jwe') {
+              <button type="button" class="btn btn-primary" (click)="openJwt.emit(o.result.raw)">Open in JWT tool <app-icon name="arrow" /></button>
+            }
+            @if (o.result.kind === 'envelope') {
+              <button type="button" class="btn btn-primary" (click)="openDecrypt.emit(o.result.raw)">Decrypt it <app-icon name="arrow" /></button>
+            }
+          </div>
+          <pre class="output">{{ o.result.output }}</pre>
+        }
+      }
+    </div>
+  </section>
+</div>

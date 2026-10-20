@@ -1,0 +1,76 @@
+.pw-row {
+  display: flex;
+  gap: 6px;
+
+  .input {
+    flex: 1;
+  }
+}
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--tone);
+  font-weight: 600;
+
+  .bar {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      background: var(--tone);
+      transition: width 0.2s;
+    }
+  }
+}
+
+.advanced summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.iter {
+  width: 130px;
+}
+
+.go {
+  align-self: flex-start;
+  height: 38px;
+  padding: 0 18px;
+}
+
+.link {
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.how {
+  line-height: 1.5;
+
+  p {
+    margin: 0 0 6px;
+  }
+
+  ol {
+    margin: 0 0 10px;
+    padding-left: 20px;
+  }
+
+  li {
+    margin-bottom: 4px;
+  }
+}
